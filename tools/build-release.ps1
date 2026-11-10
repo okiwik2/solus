@@ -26,6 +26,9 @@ Write-Host ("Installer: {0} ({1:N1} MB)" -f $setup, ((Get-Item $setup).Length / 
 $key = Join-Path $env:APPDATA 'Solus Release\signing.key'
 if (Test-Path $key) {
   $url = "https://github.com/okiwik2/solus/releases/download/v$version/SolusSetup-$version.exe"
-  & (Join-Path $root 'target\release\solus-sign.exe') manifest $key $setup $version $url "Solus $version" | Out-File -Encoding utf8 (Join-Path $root 'dist\latest.json')
+  $manifest = (& (Join-Path $root 'target\release\solus-sign.exe') manifest $key $setup $version $url "Solus $version") -join "`n"
+  if ($LASTEXITCODE -ne 0) { throw 'signing failed' }
+  # no byte-order mark: Windows PowerShell's utf8 encoding adds one, which JSON parsers reject
+  [IO.File]::WriteAllText((Join-Path $root 'dist\latest.json'), $manifest + "`n", (New-Object Text.UTF8Encoding $false))
   Write-Host 'Signed update manifest: dist\latest.json'
 }

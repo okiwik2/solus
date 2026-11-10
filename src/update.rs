@@ -89,7 +89,7 @@ pub fn check(app: &mut App, notify: Option<(Ctx, Value)>) {
                     format!("Couldn't check for updates: {e}")
                 }
             })?;
-            let v: Value = serde_json::from_str(&text).map_err(|_| "The update feed is malformed")?;
+            let v: Value = serde_json::from_str(text.trim_start_matches('\u{feff}')).map_err(|_| "The update feed is malformed")?;
             let version = v["version"].as_str().unwrap_or("");
             if !newer(version, crate::VERSION) {
                 return Ok(None);
