@@ -9,6 +9,7 @@
 | Updates | `node tests/update.mjs [exe] [installer]` | A correctly signed update is accepted; a tampered installer, a forged signature and a foreign download host are refused. |
 | Memory | `node bench/memory.mjs` | Solus vs Chrome, fresh profiles, same sites; private working set of each browser's whole process tree at fixed times. Results in `bench/results/`. |
 | Live update feed | `node tests/_livefeed.mjs [exe]` | The build parses the published GitHub feed (network). |
+| Real update | `node tests/_realupdate.mjs [installed exe]` | Runs the installed copy (throwaway profile) against the live feed, lets it download and verify the newest release, quits, and checks the installed version was upgraded. Used for 1.0.0 → 1.0.1. |
 | Visual tour | `node tests/_tour.mjs [--dark]` | Screenshots of the real window (page, menu over page, new tab, sidebar, settings, split view) into `%SHOT_DIR%`. Needs an unlocked screen. |
 | Startup & CPU | `node bench/cpu-startup.mjs` | Time to a visible window (median of 5) and background CPU with 10 sites open and no input. |
 
