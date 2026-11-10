@@ -25,6 +25,18 @@ pub const ANTHROPIC_URL: &str = "https://api.anthropic.com/v1/messages";
 pub const ANTHROPIC_VERSION: &str = "2026-10-21";
 pub const GROQ_URL: &str = "https://api.groq.com/openai/v1/chat/completions";
 
+/// Test builds can point the assistant at a local mock server, but only when the automation
+/// token is also present and the address is loopback (same rule as the update feed).
+fn api(url: &str) -> String {
+    match (std::env::var("SOLUS_AI_BASE"), std::env::var_os("SOLUS_AUTOMATION_TOKEN")) {
+        (Ok(base), Some(_)) if base.starts_with("http://127.0.0.1:") => {
+            let path = url.splitn(4, '/').nth(3).unwrap_or("");
+            format!("{}/{}", base.trim_end_matches('/'), path)
+        }
+        _ => url.to_string(),
+    }
+}
+
 pub fn models() -> Value {
     json!({
         "anthropic": [
@@ -276,9 +288,9 @@ fn effort(s: &crate::settings::Settings) -> &'static str {
 fn test_key(provider: &str, key: &str) -> Result<Value, String> {
     let agent = crate::net::agent();
     let r = if provider == "groq" {
-        agent.get("https://api.groq.com/openai/v1/models").header("Authorization", &format!("Bearer {key}")).call()
+        agent.get(&api("https://api.groq.com/openai/v1/models")).header("Authorization", &format!("Bearer {key}")).call()
     } else {
-        agent.get("https://api.anthropic.com/v1/models").header("x-api-key", key).header("anthropic-version", ANTHROPIC_VERSION).call()
+        agent.get(&api("https://api.anthropic.com/v1/models")).header("x-api-key", key).header("anthropic-version", ANTHROPIC_VERSION).call()
     };
     match r {
         Ok(resp) if resp.status().is_success() => Ok(json!({"ok": true})),
@@ -442,7 +454,7 @@ fn stream_claude(
         }
     }
     let mut req = crate::net::long_agent()
-        .post(ANTHROPIC_URL)
+        .post(&api(ANTHROPIC_URL))
         .header("x-api-key", key)
         .header("anthropic-version", ANTHROPIC_VERSION)
         .header("content-type", "application/json")
@@ -596,7 +608,7 @@ fn stream_groq(key: &str, model: &str, messages: &[Value], cancel: &AtomicBool, 
         .collect();
     let body = json!({"model": model, "messages": groq_messages(messages), "tools": tools, "tool_choice": "auto", "stream": true, "max_completion_tokens": 8192});
     let mut resp = crate::net::long_agent()
-        .post(GROQ_URL)
+        .post(&api(GROQ_URL))
         .header("Authorization", &format!("Bearer {key}"))
         .header("content-type", "application/json")
         .send(body.to_string())
@@ -899,7 +911,9 @@ fn run_tools(app: &mut App, conv: &str, calls: Vec<Value>, mut done: Vec<Option<
     }
     let n = calls.len();
     let results: std::rc::Rc<RefCell<Vec<Option<Value>>>> = std::rc::Rc::new(RefCell::new(done));
-    let pending = std::rc::Rc::new(std::cell::Cell::new(0usize));
+    // starts at 1 so that tools which finish synchronously inside the loop cannot complete the
+    // turn before the remaining calls have started; released after the loop
+    let pending = std::rc::Rc::new(std::cell::Cell::new(1usize));
     for (i, c) in calls.iter().enumerate() {
         if results.borrow()[i].is_some() {
             continue;
@@ -924,6 +938,12 @@ fn run_tools(app: &mut App, conv: &str, calls: Vec<Value>, mut done: Vec<Option<
         exec_tool(app, wid, &profile, &name, &c["input"], Box::new(deliver));
     }
     let _ = n;
+    // release the guard; also covers "nothing ran" (every call was declined)
+    pending.set(pending.get() - 1);
+    if pending.get() == 0 {
+        let res: Vec<Value> = results.borrow().iter().map(|x| x.clone().unwrap_or(json!({}))).collect();
+        tools_finished(app, conv, &calls, res);
+    }
 }
 
 fn tools_finished(app: &mut App, conv: &str, calls: &[Value], results: Vec<Value>) {

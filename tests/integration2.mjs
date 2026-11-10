@@ -18,6 +18,7 @@ const srv = http.createServer((q, r) => {
   if (u === '/3pc') r.end(`<!doctype html><title>3pc</title><script>window.__tp='pending';addEventListener('message',e=>window.__tp=e.data)</script><iframe src="http://127.0.0.1:${srv.address().port}/frame"></iframe>`);
   else if (u === '/frame') r.end(`<!doctype html><script>document.cookie="tp=1; SameSite=None; Secure; path=/";parent.postMessage("cookie:"+document.cookie,"*")</script>`);
   else if (u === '/1p') r.end(`<!doctype html><title>1p</title><script>document.cookie="fp=1; path=/";window.__fp=document.cookie</script>`);
+  else if (u === '/video') r.end('<!doctype html><title>video</title><canvas id=c width=320 height=180></canvas><video id=v muted autoplay playsinline width=320 height=180></video><script>const c=document.getElementById("c"),g=c.getContext("2d");let n=0;setInterval(()=>{g.fillStyle="hsl("+(n++*7%360)+",70%,50%)";g.fillRect(0,0,320,180)},40);const v=document.getElementById("v");v.srcObject=c.captureStream(25);v.play();window.__pip=[];v.addEventListener("enterpictureinpicture",()=>__pip.push("enter"));v.addEventListener("leavepictureinpicture",()=>__pip.push("leave"))</script>');
   else r.end('<!doctype html><title>ok</title>ok');
 });
 await new Promise((r) => srv.listen(0, '127.0.0.1', r));
@@ -74,6 +75,21 @@ await test('ui-is-painted-and-page-area-has-size', null, async (s) => {
   ok(Math.abs(v.host.width - v.w) < 2 && v.host.height > v.h * 0.5, 'page area has the wrong size: ' + JSON.stringify(v.host));
   ok((await s.eval('document.visibilityState')) === 'visible', 'active page is not visible');
   ok(Math.abs((await s.eval('innerHeight')) - v.host.height) < 3, 'page viewport does not match the page area');
+});
+
+await test('picture-in-picture-from-the-menu', null, async (s) => {
+  await s.go(SITE + '/video');
+  await poll(s, 'document.getElementById("v").readyState', (v) => v > 0);
+  await s.bridge('perf.pip');
+  const inPip = await poll(s, '!!document.pictureInPictureElement', (v) => v === true);
+  ok(inPip, 'video did not enter picture-in-picture');
+  await s.bridge('perf.pip');
+  const out = await poll(s, '!document.pictureInPictureElement && __pip.join()', (v) => v === 'enter,leave');
+  ok(out === 'enter,leave', 'did not leave picture-in-picture: ' + out);
+  await s.go(SITE + '/1p');
+  await s.bridge('perf.pip');
+  const toast = await (async () => { for (let i = 0; i < 20; i++) { const v = await s.eval('[...document.querySelectorAll(".toast, #toast")].map(x=>x.innerText).join("|")', 'ui'); if (/no video/.test(v)) return v; await sleep(200); } return ''; })();
+  ok(/no video/.test(toast), 'no "no video" message on a page without video');
 });
 
 await test('third-party-cookies-allowed-control', { block_third_party_cookies: false }, async (s) => {

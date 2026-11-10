@@ -127,8 +127,9 @@ fn handle(app: &mut App, req: Value, tx: mpsc::Sender<Value>) {
             // invoke a bridge command as if the browser UI sent it
             let wid = req["win"].as_u64().map(|x| x as u32).or_else(|| app.last_active_window(false)).unwrap_or(0);
             let msg = json!({"id": null, "cmd": req["name"], "args": req["args"]});
-            let r = crate::bridge::run_for_automation(app, wid, msg);
-            let _ = tx.send(json!({"ok": true, "result": r}));
+            crate::bridge::run_for_automation(app, wid, msg, Box::new(move |r| {
+                let _ = tx.send(json!({"ok": true, "result": r}));
+            }));
         }
         "action" => {
             let wid = req["win"].as_u64().map(|x| x as u32).or_else(|| app.last_active_window(false)).unwrap_or(0);

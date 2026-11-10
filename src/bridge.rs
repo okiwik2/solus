@@ -112,6 +112,16 @@ pub fn respond(app: &App, ctx: &Ctx, id: &Value, r: Result<Value, String>) {
     if id.is_null() {
         return;
     }
+    // a delayed answer to a command the test-automation channel sent
+    if let Some(n) = id["automation"].as_u64() {
+        if let Some(done) = AUTOMATION_WAITING.with(|m| m.borrow_mut().remove(&n)) {
+            done(match r {
+                Ok(v) => json!({"ok": true, "data": v}),
+                Err(e) => json!({"ok": false, "error": e}),
+            });
+        }
+        return;
+    }
     let Some(wv) = target_wv(app, ctx) else { return };
     let msg = match r {
         Ok(v) => json!({"re": id, "ok": true, "data": v}),
@@ -695,14 +705,27 @@ fn dispatch(app: &mut App, ctx: &Ctx, cmd: &str, args: &Value, id: &Value) -> Re
     }
 }
 
-/// Run a bridge command synchronously on behalf of the test harness (browser-UI context).
-pub fn run_for_automation(app: &mut App, wid: u32, msg: Value) -> Value {
+thread_local! {
+    static AUTOMATION_WAITING: std::cell::RefCell<std::collections::HashMap<u64, Box<dyn FnOnce(Value)>>> = Default::default();
+    static AUTOMATION_SEQ: std::cell::Cell<u64> = const { std::cell::Cell::new(0) };
+}
+
+/// Run a bridge command for the test-automation channel; `done` gets the result, including
+/// results of commands that answer later (sync setup, key tests, update checks).
+pub fn run_for_automation(app: &mut App, wid: u32, msg: Value, done: Box<dyn FnOnce(Value)>) {
     let ctx = Ctx { wid, tid: 0, page: "chrome".into() };
     let cmd = msg["cmd"].as_str().unwrap_or("").to_string();
-    match dispatch(app, &ctx, &cmd, &msg["args"], &Value::Null) {
-        Reply::Now(v) => json!({"ok": true, "data": v}),
-        Reply::Err(e) => json!({"ok": false, "error": e}),
-        Reply::Later => json!({"ok": true, "pending": true}),
+    let n = AUTOMATION_SEQ.with(|s| {
+        s.set(s.get() + 1);
+        s.get()
+    });
+    let id = json!({"automation": n});
+    match dispatch(app, &ctx, &cmd, &msg["args"], &id) {
+        Reply::Now(v) => done(json!({"ok": true, "data": v})),
+        Reply::Err(e) => done(json!({"ok": false, "error": e})),
+        Reply::Later => {
+            AUTOMATION_WAITING.with(|m| m.borrow_mut().insert(n, done));
+        }
     }
 }
 

@@ -28,7 +28,9 @@ powershell -File tools\build-release.ps1    # dist\SolusSetup-<version>.exe (+ s
 ```
 cargo test --bin solus                      # unit tests (crypto, storage, import, sync merge, blocking, ...)
 node tests\integration.mjs                  # end-to-end tests against a real build (throwaway profile)
-node tests\integration2.mjs                 # third-party cookies, profiles, reminders, Web Store extension, task manager
+node tests\integration2.mjs                 # UI visibility, picture-in-picture, third-party cookies, profiles, reminders, extensions, task manager
+node tests\ai.mjs                           # AI assistant against a local mock of the Claude and Groq APIs
+node tests\sync2.mjs                        # two devices sharing one sync folder
 node tests\installer.mjs                    # installs dist\SolusSetup-*.exe per-user, upgrades, uninstalls
 node tests\update.mjs                       # signed-update acceptance and tamper/forgery refusal
 node bench\memory.mjs                       # Solus vs Chrome memory benchmark
@@ -63,5 +65,5 @@ Where the saving comes from: Solus asks the engine to shrink background tabs aft
 - **Windows Hello** (PIN/fingerprint/face) must be set up to reveal or export saved passwords.
 - **Content scripts** keep the DevTools Runtime domain enabled per tab (needed for the isolated-world binding); pages that log heavily to the console pay a small extra cost.
 - **Unsigned installer:** without a code-signing certificate (paid), Windows SmartScreen shows "Windows protected your PC" on first run — choose *More info → Run anyway*.
-- **Automatic updates** need a published release feed (GitHub Releases); until one is published, the update check reports that no feed exists.
+- **Automatic updates** come from GitHub Releases (`latest.json`, Ed25519-signed). An update is only installed if its signature matches the key built into Solus and the download comes from GitHub.
 - **Web messaging object:** `window.chrome.webview` remains visible to web pages (WebView2 behaviour); messages from web pages are ignored.
