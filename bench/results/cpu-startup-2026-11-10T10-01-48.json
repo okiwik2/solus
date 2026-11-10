@@ -1,0 +1,28 @@
+{
+  "when": "2026-11-10T10:01:48.532Z",
+  "machine": "Intel(R) Core(TM) Ultra 5 338H, 12 logical cores",
+  "chromeStartup": [
+    1051,
+    278,
+    247,
+    252,
+    269
+  ],
+  "solusStartup": [
+    104,
+    89,
+    94,
+    89,
+    89
+  ],
+  "chromeCpu": {
+    "cpuMs": 31797,
+    "avgPercentOfMachine": 1.47,
+    "processes": 26
+  },
+  "solusCpu": {
+    "cpuMs": 4344,
+    "avgPercentOfMachine": 0.2,
+    "processes": 21
+  }
+}

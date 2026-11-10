@@ -1,0 +1,38 @@
+Solus — third-party software notices
+====================================
+
+Solus is built on, includes or downloads the following third-party software and data.
+
+Browser engine
+--------------
+Microsoft Edge WebView2 Runtime (Chromium-based). The runtime is part of Windows 11 and is
+updated by Microsoft; it is not redistributed inside Solus. The installer may run Microsoft's
+WebView2 bootstrapper (MicrosoftEdgeWebview2Setup.exe) if the runtime is missing.
+https://developer.microsoft.com/microsoft-edge/webview2/
+
+Ad & tracker blocking
+---------------------
+adblock-rust — Brave Software — Mozilla Public License 2.0 (unmodified).
+  Source: https://github.com/brave/adblock-rust
+EasyList and EasyPrivacy — The EasyList authors — dual licensed GPLv3 / CC BY-SA 3.0.
+  https://easylist.to/
+uBlock filters – Privacy — Raymond Hill and contributors — GPLv3.
+  https://github.com/uBlockOrigin/uAssets
+Fanboy's Annoyance List — Fanboy and the EasyList authors — dual licensed GPLv3 / CC BY-SA 3.0.
+  https://easylist.to/
+Filter lists are shipped as unmodified data files in the "lists" folder and refreshed from
+their publishers.
+
+Database
+--------
+SQLite — public domain. https://sqlite.org/
+
+Online services Solus can talk to (only when you use the feature)
+-----------------------------------------------------------------
+Search suggestions: your chosen search engine. Translation: Google Translate's web proxy.
+AI assistant: Anthropic (Claude) or Groq, with your own API key. Weather widget: Open-Meteo.
+Extensions: Google's Chrome Web Store update service. Filter list updates: the publishers above.
+Solus updates: GitHub Releases.
+
+Rust crates compiled into solus.exe (name, version, licence)
+-----------------------------------------------------------

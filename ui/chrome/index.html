@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Solus</title>
+<link rel="stylesheet" href="/chrome/chrome.css">
+<script src="/shared/bridge.js"></script>
+<script src="/shared/theme.js"></script>
+<script src="/shared/icons.js"></script>
+</head>
+<body>
+<div id="app">
+  <header id="tabstrip">
+    <button id="ws-btn" class="strip-btn" title="Workspaces"><span class="ws-dot"></span><span class="ws-name">Personal</span></button>
+    <div id="tabs" role="tablist"></div>
+    <button id="newtab-btn" class="strip-btn" title="New tab (Ctrl+T)"></button>
+    <div class="drag-space"></div>
+    <button id="tabsearch-btn" class="strip-btn" title="Search tabs (Ctrl+Shift+A)"></button>
+  </header>
+  <nav id="toolbar">
+    <button class="tb-btn" id="back-btn" title="Back (Alt+Left)"></button>
+    <button class="tb-btn" id="fwd-btn" title="Forward (Alt+Right)"></button>
+    <button class="tb-btn" id="reload-btn" title="Reload (F5)"></button>
+    <button class="tb-btn" id="home-btn" title="Home" hidden></button>
+    <div id="omnibox">
+      <button class="chip" id="site-chip" title="View site information"></button>
+      <input id="omni-input" spellcheck="false" autocomplete="off" placeholder="Search Google or type a URL" aria-label="Address and search bar">
+      <span class="zoom-chip" id="zoom-chip" hidden></span>
+      <button class="omni-ic" id="translate-btn" title="Translate this page" hidden></button>
+      <button class="omni-ic" id="key-btn" title="Saved passwords for this site" hidden></button>
+      <button class="omni-ic" id="notes-btn" title="Notes for this page (Ctrl+Shift+K)"></button>
+      <button class="omni-ic" id="star-btn" title="Bookmark this page (Ctrl+D)"></button>
+      <div class="load-bar" id="load-bar"></div>
+    </div>
+    <button class="tb-btn" id="shield-btn" title="Privacy protection"></button>
+    <button class="tb-btn" id="dl-btn" title="Downloads (Ctrl+J)" hidden></button>
+    <button class="tb-btn" id="ext-btn" title="Extensions" hidden></button>
+    <button class="tb-btn" id="ai-btn" title="AI assistant (Ctrl+Shift+E)"></button>
+    <button class="tb-btn" id="sidebar-btn" title="Sidebar (Ctrl+Shift+S)"></button>
+    <button class="tb-btn" id="profile-btn" title="Profile"></button>
+    <button class="tb-btn" id="menu-btn" title="Customise and control Solus"></button>
+  </nav>
+  <div id="bookmarks-bar">
+    <div id="bm-items"></div>
+    <div class="bm-sep"></div>
+    <button class="bm" id="bm-other"></button>
+  </div>
+  <div id="infobars"></div>
+  <div id="findbar" hidden>
+    <input id="find-input" placeholder="Find in page" spellcheck="false">
+    <span id="find-count"></span>
+    <button class="x-btn" id="find-prev" title="Previous (Shift+Enter)"></button>
+    <button class="x-btn" id="find-next" title="Next (Enter)"></button>
+    <button class="toggle-chip" id="find-case" title="Match case">Aa</button>
+    <span style="flex:1"></span>
+    <button class="x-btn" id="find-close" title="Close (Esc)"></button>
+  </div>
+  <div id="content-row">
+    <aside id="sidebar" class="panel" hidden></aside>
+    <section id="page-host"></section>
+    <aside id="ai-panel" class="panel" hidden></aside>
+  </div>
+</div>
+<div id="layer"></div>
+<script src="/chrome/chrome.js"></script>
+<script src="/chrome/panels.js"></script>
+<script src="/chrome/ai.js"></script>
+</body>
+</html>

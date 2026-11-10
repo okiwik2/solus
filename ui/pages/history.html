@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>History</title>
+<link rel="icon" href="/img/logo-256.png">
+<link rel="stylesheet" href="/shared/base.css">
+<script src="/shared/bridge.js"></script><script src="/shared/theme.js"></script><script src="/shared/icons.js"></script>
+<style>
+  .day { margin: 22px 0 6px; font-weight: 600; color: var(--muted); font-size: 13px; }
+  .hrow { display: flex; align-items: center; gap: 12px; padding: 7px 14px; border-top: 1px solid var(--border); }
+  .hrow:first-child { border-top: 0; }
+  .hrow:hover { background: var(--tb-hover); }
+  .hrow .time { color: var(--muted); font-size: 12px; width: 52px; flex: none; font-variant-numeric: tabular-nums; }
+  .hrow img { width: 16px; height: 16px; }
+  .hrow a { color: var(--text); text-decoration: none; flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+  .hrow .host { color: var(--muted); font-size: 12px; max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .top { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<main class="wide" style="margin:0 auto">
+  <div class="top"><h1 style="flex:1">History</h1><input class="field" id="q" placeholder="Search history" style="width:320px"><button class="btn" id="del" disabled>Delete selected</button><button class="btn" id="clear">Clear browsing data…</button></div>
+  <p class="muted small" style="margin-top:-6px">Your history is encrypted on this PC. Incognito pages are never recorded.</p>
+  <div id="list"></div>
+  <div style="text-align:center;margin:20px"><button class="btn" id="more" hidden>Show more</button></div>
+</main>
+<script src="/shared/page.js"></script>
+<script>
+  let rows = [], before = 0, q = '';
+  const sel = new Set();
+  const dayName = (ts) => { const d = new Date(ts), t = new Date(); t.setHours(0, 0, 0, 0); const diff = Math.round((t - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5); return (diff === 0 ? 'Today — ' : diff === 1 ? 'Yesterday — ' : '') + d.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }); };
+  const host = (u) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return ''; } };
+  async function load(reset) {
+    if (reset) { rows = []; before = 0; sel.clear(); }
+    const page = await call('history.query', { text: q, before, limit: 150 });
+    rows = rows.concat(page);
+    if (page.length) before = page[page.length - 1].ts;
+    $('#more').hidden = page.length < 150;
+    render();
+  }
+  function render() {
+    let html = '', day = '';
+    for (const r of rows) {
+      const d = dayName(r.ts);
+      if (d !== day) { if (day) html += '</div>'; html += `<div class="day">${esc(d)}</div><div class="card">`; day = d; }
+      html += `<div class="hrow"><input type="checkbox" data-id="${r.id}" ${sel.has(r.id) ? 'checked' : ''}><span class="time">${new Date(r.ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>${r.icon ? `<img src="${esc(r.icon)}">` : icon('globe', 16)}<a href="${esc(r.url)}" title="${esc(r.url)}">${esc(r.title || r.url)}</a><span class="host">${esc(host(r.url))}</span><button class="icon-btn" data-more="${r.id}" title="More">${icon('moreV', 15)}</button></div>`;
+    }
+    if (day) html += '</div>';
+    $('#list').innerHTML = html || `<div class="empty">${q ? 'No pages match your search.' : 'Pages you visit will appear here.'}</div>`;
+    $('#del').disabled = !sel.size;
+  }
+  $('#list').addEventListener('change', (e) => { const id = +e.target.dataset.id; if (!id) return; e.target.checked ? sel.add(id) : sel.delete(id); $('#del').disabled = !sel.size; });
+  $('#list').addEventListener('click', (e) => {
+    const m = e.target.closest('[data-more]'); if (!m) return;
+    const r = rows.find((x) => x.id === +m.dataset.more);
+    modal(`<h3>${esc(r.title || r.url)}</h3><p class="muted small" style="word-break:break-all">${esc(r.url)}</p><div class="actions" style="flex-wrap:wrap"><button class="btn" data-a="site">More from this site</button><button class="btn" data-a="all">Remove every visit to this page</button><button class="btn danger" data-a="one">Remove this visit</button></div>`, (mm, close) => {
+      mm.onclick = (ev) => { const a = ev.target.closest('[data-a]')?.dataset.a; if (!a) return; close();
+        if (a === 'site') { q = host(r.url); $('#q').value = q; load(true); }
+        if (a === 'all') call('history.deleteUrl', { url: r.url }).then(() => load(true));
+        if (a === 'one') call('history.deleteVisits', { ids: [r.id] }).then(() => load(true)); };
+    });
+  });
+  $('#del').onclick = () => confirmBox(`Remove ${sel.size} item${sel.size > 1 ? 's' : ''}?`, '', 'Remove', true).then((ok) => ok && call('history.deleteVisits', { ids: [...sel] }).then(() => load(true)));
+  $('#clear').onclick = () => { location.href = 'solus://settings/#clear'; };
+  $('#more').onclick = () => load(false);
+  $('#q').oninput = (e) => { clearTimeout(window._t); window._t = setTimeout(() => { q = e.target.value.trim(); load(true); }, 200); };
+  load(true);
+</script>
+</body>
+</html>

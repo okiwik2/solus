@@ -1,0 +1,8 @@
+/target
+/dist
+*.locked-*.exe
+tests/last-*.txt
+tests/*-results*.json
+bench/last-run.txt
+.wv2-methods.txt
+.wv2-handlers.txt

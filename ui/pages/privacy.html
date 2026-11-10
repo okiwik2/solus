@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Privacy & security</title>
+<link rel="icon" href="/img/logo-256.png">
+<link rel="stylesheet" href="/shared/base.css">
+<script src="/shared/bridge.js"></script><script src="/shared/theme.js"></script><script src="/shared/icons.js"></script>
+<style>
+  .bars { display: flex; align-items: flex-end; gap: 6px; height: 120px; padding: 10px 18px 4px; }
+  .bars div { flex: 1; background: var(--accent); border-radius: 4px 4px 0 0; min-height: 2px; position: relative; }
+  .bars div span { position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%); font-size: 10.5px; color: var(--muted); }
+  .chk { display: flex; gap: 12px; align-items: flex-start; padding: 12px 18px; border-top: 1px solid var(--border); }
+  .chk:first-child { border-top: 0; }
+  .chk .s { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+  .chk .s.ok { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok); }
+  .chk .s.warn { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+  .chk .grow { flex: 1; }
+</style>
+</head>
+<body>
+<main class="wide" style="margin:0 auto;max-width:1040px">
+  <div class="row-flex"><h1 style="flex:1">Privacy &amp; security</h1><button class="btn" id="settings">Privacy settings</button></div>
+  <p class="muted">What Solus is doing to protect you right now.</p>
+  <div class="grid c4" id="stats" style="margin:18px 0"></div>
+  <div class="grid c2"><div><h2>Ads &amp; trackers blocked (last 14 days)</h2><div class="card" style="padding-bottom:24px"><div class="bars" id="bars"></div></div>
+    <h2>Most-blocked sites (30 days)</h2><div class="card" id="top"></div></div>
+    <div><h2>Protection checklist</h2><div class="card" id="checks"></div></div></div>
+  <h2>What leaves your PC</h2>
+  <div class="card pad small" style="line-height:1.7">
+    <div><b>Solus itself sends no telemetry or usage data.</b> There is no Solus account or server.</div>
+    <div><b>Search suggestions</b> (if on) send what you type in the address bar to your search engine.</div>
+    <div><b>Microsoft Defender SmartScreen</b> (if on) checks site and download reputations with Microsoft. The engine (Microsoft Edge WebView2) may also send Windows diagnostic data according to your Windows privacy settings.</div>
+    <div><b>Filter list updates</b> download from easylist.to, GitHub and fanboy.co.nz every few days. <b>Update checks</b> contact GitHub daily (can be turned off).</div>
+    <div><b>The AI assistant</b> sends your question (and the page text, if you allow it) to Anthropic or Groq only when you ask it something.</div>
+    <div><b>Sync</b> writes encrypted files to your own cloud-drive folder; your cloud provider can't read them.</div>
+  </div>
+</main>
+<script src="/shared/page.js"></script>
+<script>
+  (async () => {
+    const d = await call('privacy.dashboard');
+    const b = d.blocking;
+    const stat = (v, k, ic) => `<div class="card stat">${icon(ic, 20)}<span class="v">${esc(v)}</span><span class="k">${esc(k)}</span></div>`;
+    $('#stats').innerHTML = stat(b.today.toLocaleString(), 'blocked today', 'shieldCheck') + stat(b.week.toLocaleString(), 'blocked this week', 'shield') + stat(d.history.count.toLocaleString(), 'pages in encrypted history', 'lock') + stat(d.passwords.count.toLocaleString(), 'saved passwords', 'key');
+    const today = Math.floor(Date.now() / 864e5);
+    const days = []; for (let i = 13; i >= 0; i--) days.push(today - i);
+    const map = Object.fromEntries(b.daily.map((x) => [x.day, x.count]));
+    const max = Math.max(1, ...days.map((x) => map[x] || 0));
+    $('#bars').innerHTML = days.map((x) => `<div style="height:${Math.max(2, ((map[x] || 0) / max) * 100)}%" title="${new Date(x * 864e5).toLocaleDateString()}: ${map[x] || 0}"><span>${new Date(x * 864e5).getDate()}</span></div>`).join('');
+    $('#top').innerHTML = b.topSites.map((s) => `<div class="item"><span class="grow">${esc(s.site)}</span><b>${s.count.toLocaleString()}</b></div>`).join('') || '<div class="item muted">Nothing blocked yet.</div>';
+    const chk = (ok, title, desc) => `<div class="chk"><span class="s ${ok ? 'ok' : 'warn'}">${icon(ok ? 'check' : 'warn', 14)}</span><div class="grow"><b>${esc(title)}</b><div class="muted small">${desc}</div></div></div>`;
+    const lvl = { off: 'Off', balanced: 'Balanced', strict: 'Strict' }[b.level];
+    $('#checks').innerHTML = [
+      chk(b.level !== 'off', `Ad & tracker blocking: ${lvl}`, b.ready ? 'Filter lists loaded.' : 'Filter lists are loading…'),
+      chk(d.trackingPrevention !== 'basic', `Tracking prevention: ${d.trackingPrevention}`, 'Built-in engine protection against known trackers.'),
+      chk(d.thirdPartyCookies === 'blocked', `Third-party cookies ${d.thirdPartyCookies}`, 'Cross-site tracking cookies.'),
+      chk(d.httpsFirst, `HTTPS-First ${d.httpsFirst ? 'on' : 'off'}`, 'Connections are upgraded to HTTPS where possible.'),
+      chk(d.smartscreen, `SmartScreen ${d.smartscreen ? 'on' : 'off'}`, 'Warnings for dangerous sites and downloads.'),
+      chk(true, 'History encrypted on this PC', 'AES-256 with a key protected by your Windows account.'),
+      chk(d.passwords.weak + d.passwords.reused === 0, `Passwords: ${d.passwords.weak} weak, ${d.passwords.reused} reused`, `<a href="solus://passwords/">Review passwords</a>`),
+      chk(!d.ai.permissions.read_history, `AI assistant ${d.ai.enabled ? (d.ai.keySet ? 'on' : 'not set up') : 'off'}`, d.ai.permissions.read_history ? 'It may search your history.' : 'It can\'t see your history.'),
+      chk(!d.sync.enabled || !!d.sync.lastSync, `Sync ${d.sync.enabled ? 'on (end-to-end encrypted)' : 'off'}`, d.sync.enabled ? 'Last sync ' + timeAgo(d.sync.lastSync) : 'Your data stays on this PC.'),
+      chk(true, 'No telemetry', 'Solus collects nothing.'),
+      chk(d.permissions.filter((p) => p.state === 'allow').length < 10, `${d.permissions.filter((p) => p.state === 'allow').reduce((a, p) => a + p.count, 0)} site permissions allowed`, '<a href="solus://settings/#site">Review site permissions</a>'),
+    ].join('');
+    $('#settings').onclick = () => { location.href = 'solus://settings/#privacy'; };
+  })();
+</script>
+</body>
+</html>

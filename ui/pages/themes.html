@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Theme editor</title>
+<link rel="icon" href="/img/logo-256.png">
+<link rel="stylesheet" href="/shared/base.css">
+<script src="/shared/bridge.js"></script><script src="/shared/theme.js"></script><script src="/shared/icons.js"></script>
+<style>
+  .ed { display: grid; grid-template-columns: 360px 1fr; gap: 24px; align-items: start; }
+  .colors .row-flex { justify-content: space-between; padding: 5px 0; }
+  .colors input[type=color] { width: 48px; height: 28px; border: 1px solid var(--border); border-radius: 6px; background: none; padding: 2px; }
+  .preview { border-radius: 12px; overflow: hidden; border: 1px solid var(--border); position: sticky; top: 20px; }
+  .pv-strip { height: 40px; display: flex; align-items: flex-end; padding: 0 8px; gap: 4px; }
+  .pv-tab { height: 32px; width: 160px; border-radius: 9px 9px 0 0; display: flex; align-items: center; gap: 6px; padding: 0 10px; font-size: 12px; }
+  .pv-bar { height: 44px; display: flex; align-items: center; padding: 0 10px; gap: 10px; }
+  .pv-omni { flex: 1; height: 32px; border-radius: 16px; display: flex; align-items: center; padding: 0 12px; font-size: 12.5px; }
+  .pv-page { height: 180px; display: grid; place-items: center; }
+  .pv-btn { padding: 6px 14px; border-radius: 8px; font-size: 12.5px; font-weight: 600; }
+  textarea.css { width: 100%; min-height: 200px; font-family: "Cascadia Mono", Consolas, monospace; font-size: 12.5px; }
+  .tlist button { margin: 0 6px 6px 0; }
+</style>
+</head>
+<body>
+<main class="wide" style="margin:0 auto">
+  <h1>Theme editor</h1>
+  <p class="muted small">Make your own colour theme for light and dark mode, or add custom CSS to fine-tune the browser interface and new tab page.</p>
+  <div class="tlist" id="tlist" style="margin:12px 0"></div>
+  <div class="ed">
+    <div>
+      <div class="card pad"><p class="muted small" style="margin-top:0">Name</p><input class="field" id="name" style="width:100%" maxlength="40">
+        <div class="row-flex" style="justify-content:space-between;margin-top:12px"><span>Accent colour</span><input type="color" id="accent"></div>
+        <div class="seg" id="mode" style="margin:14px 0 6px"><button data-m="light" class="on">Light colours</button><button data-m="dark">Dark colours</button></div>
+        <div class="colors" id="colors"></div>
+        <div class="row-flex" style="margin-top:14px"><button class="btn primary" id="save">Save &amp; use theme</button><button class="btn danger" id="del" hidden>Delete</button></div></div>
+      <h2>Custom CSS</h2>
+      <div class="card pad"><p class="muted small" style="margin-top:0">Applied to the browser interface and Solus pages. Example: <code>.tab { border-radius: 4px 4px 0 0 }</code></p><textarea class="field css" id="css" spellcheck="false"></textarea><div style="margin-top:8px"><button class="btn" id="savecss">Apply CSS</button></div></div>
+    </div>
+    <div class="preview" id="preview"></div>
+  </div>
+</main>
+<script src="/shared/page.js"></script>
+<script>
+  const FIELDS = [['frame', 'Tab strip'], ['toolbar', 'Toolbar'], ['tabActive', 'Active tab'], ['field', 'Address bar'], ['text', 'Text'], ['muted', 'Secondary text']];
+  let themes = [], t = null, mode = 'light', settings = {};
+  const blank = () => ({ id: '', name: 'My theme', accent: '#e8590c', light: { frame: '#e8ebf0', toolbar: '#ffffff', tabActive: '#ffffff', text: '#1f2328', muted: '#5f6670', field: '#eef1f5' }, dark: { frame: '#1f2023', toolbar: '#2b2c30', tabActive: '#2b2c30', text: '#e8e9ed', muted: '#a3a7b0', field: '#1c1d20' } });
+  async function load(selectId) {
+    settings = await call('getSettings');
+    themes = await call('themes.list');
+    const cur = themes.find((x) => x.id === (selectId || settings.theme_id)) || themes[0];
+    $('#tlist').innerHTML = themes.map((x) => `<button class="btn small${x.id === settings.theme_id ? ' primary' : ''}" data-id="${esc(x.id)}">${esc(x.name)}</button>`).join('') + '<button class="btn small" data-new>+ New theme</button>';
+    pick(cur);
+    $('#css').value = settings.custom_css || '';
+  }
+  function pick(x) {
+    t = JSON.parse(JSON.stringify(x));
+    if (t.builtin) { t.id = ''; t.name = t.name + ' (copy)'; }
+    $('#name').value = t.name; $('#accent').value = t.accent;
+    $('#del').hidden = !x.id || x.builtin;
+    drawColors(); preview();
+  }
+  function drawColors() {
+    $('#colors').innerHTML = FIELDS.map(([k, l]) => `<div class="row-flex"><span>${l}</span><input type="color" data-k="${k}" value="${t[mode][k]}"></div>`).join('');
+  }
+  function preview() {
+    const p = t[mode];
+    $('#preview').innerHTML = `<div class="pv-strip" style="background:${p.frame}"><div class="pv-tab" style="background:${p.tabActive};color:${p.text}">${icon('globe', 14)} Active tab</div><div class="pv-tab" style="color:${p.muted}">${icon('globe', 14)} Other tab</div></div>
+      <div class="pv-bar" style="background:${p.toolbar};color:${p.text}">${icon('back', 16)}${icon('reload', 16)}<div class="pv-omni" style="background:${p.field};color:${p.text}">${icon('lock', 13)}&nbsp; example.com</div><span style="color:${t.accent}">${icon('star', 16)}</span></div>
+      <div class="pv-page" style="background:${mode === 'dark' ? '#18191b' : '#f7f8fa'};color:${p.muted}"><span class="pv-btn" style="background:${t.accent};color:${solusThemeUtil.onAccent(t.accent)}">Accent button</span></div>`;
+  }
+  $('#tlist').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; if (b.dataset.new !== undefined) pick(blank()); else pick(themes.find((x) => x.id === b.dataset.id)); };
+  $('#mode').onclick = (e) => { const b = e.target.closest('button'); if (!b) return; mode = b.dataset.m; $$('#mode button').forEach((x) => x.classList.toggle('on', x === b)); drawColors(); preview(); };
+  $('#colors').oninput = (e) => { const k = e.target.dataset.k; if (k) { t[mode][k] = e.target.value; preview(); } };
+  $('#accent').oninput = (e) => { t.accent = e.target.value; preview(); };
+  $('#name').oninput = (e) => { t.name = e.target.value; };
+  $('#save').onclick = () => {
+    const ratio = solusThemeUtil.contrast(t.light.text, t.light.toolbar), ratio2 = solusThemeUtil.contrast(t.dark.text, t.dark.toolbar);
+    if (ratio < 4.5 || ratio2 < 4.5) toast('Note: text and toolbar colours have low contrast and may be hard to read.');
+    call('themes.save', { theme: t }).then((id) => call('setSetting', { key: 'theme_id', value: id }).then(() => { toast('Theme saved and applied.'); load(id); })).catch((e) => toast(e.message));
+  };
+  $('#del').onclick = () => confirmBox('Delete this theme?', '', 'Delete', true).then((ok) => ok && call('themes.delete', { id: t.id }).then(() => load()));
+  $('#savecss').onclick = () => call('setSetting', { key: 'custom_css', value: $('#css').value }).then(() => toast('Custom CSS applied.'));
+  load();
+</script>
+</body>
+</html>

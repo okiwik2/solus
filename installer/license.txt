@@ -1,0 +1,20 @@
+Solus browser
+Copyright (c) 2026 the Solus authors. All rights reserved.
+
+You may install and use Solus on any computer you own or control.
+
+Solus is provided "as is", without warranty of any kind, express or implied, including but not
+limited to the warranties of merchantability, fitness for a particular purpose and
+non-infringement. In no event shall the authors be liable for any claim, damages or other
+liability arising from the use of Solus.
+
+Your data
+- Your bookmarks, history, passwords, notes and settings are stored on this PC, encrypted where
+  marked in the app. Solus does not collect telemetry and has no Solus account or server.
+- Optional features send data only when you use them: search suggestions (your search engine),
+  translation (Google Translate), the AI assistant (Anthropic or Groq, with your own key),
+  extensions (Chrome Web Store), filter-list and app updates.
+- Sync writes end-to-end encrypted files to a folder you choose (for example in OneDrive).
+
+Solus includes third-party software and data under their own licences; see
+THIRD-PARTY-NOTICES.txt in the installation folder.

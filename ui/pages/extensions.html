@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Extensions</title>
+<link rel="icon" href="/img/logo-256.png">
+<link rel="stylesheet" href="/shared/base.css">
+<script src="/shared/bridge.js"></script><script src="/shared/theme.js"></script><script src="/shared/icons.js"></script>
+<style>.ext-ic { width: 32px; height: 32px; border-radius: 6px; display: grid; place-items: center; background: var(--field); flex: none; } .ext-ic img { width: 32px; height: 32px; }</style>
+</head>
+<body>
+<main style="margin:0 auto">
+  <h1>Extensions</h1>
+  <p class="muted small">Solus can run many Chrome Web Store extensions. The engine supports most extension features, but some extensions that rely on Chrome-only features won't work fully.</p>
+  <div class="card pad"><div class="row-flex"><input class="field" id="url" style="flex:1" placeholder="Paste a Chrome Web Store link, e.g. https://chromewebstore.google.com/detail/…"><button class="btn primary" id="install">Add to Solus</button></div>
+    <div class="small muted" style="margin-top:8px">Browse the store: <a href="https://chromewebstore.google.com/" id="store">chromewebstore.google.com</a> — copy an extension's address and paste it here.</div><div id="status" class="small" style="margin-top:6px"></div></div>
+  <h2>Installed</h2><div class="card" id="list"></div>
+  <h2>Popular extensions</h2><div class="card" id="sug"></div>
+</main>
+<script src="/shared/page.js"></script>
+<script>
+  async function load() {
+    const list = await call('ext.list');
+    $('#list').innerHTML = list.map((x) => `<div class="item"><span class="ext-ic">${x.icon ? `<img src="${esc(x.icon)}">` : icon('puzzle', 20)}</span><div class="grow"><div class="label">${esc(x.name)} <span class="muted small">${esc(x.version)}</span></div><div class="desc">Installed ${new Date(x.installed).toLocaleDateString()}${x.mv === 2 ? ' · Manifest V2 (may not work)' : ''}</div></div>
+      ${x.popup ? `<button class="btn small" data-open="${esc(x.id)}">Open</button>` : ''}${x.options ? `<button class="btn small" data-opt="${esc(x.id)}">Options</button>` : ''}${sw(x.enabled, `data-en="${esc(x.id)}"`)}<button class="icon-btn" data-rm="${esc(x.id)}" title="Remove">${icon('trash', 15)}</button></div>`).join('') || '<div class="item muted">No extensions installed.</div>';
+    const sug = await call('ext.suggested');
+    $('#sug').innerHTML = sug.map((x) => `<div class="item"><span class="ext-ic">${icon('puzzle', 20)}</span><div class="grow"><div class="label">${esc(x.name)}</div><div class="desc">${esc(x.about)}</div></div><button class="btn small" data-add="${esc(x.id)}">Add</button></div>`).join('');
+  }
+  function install(id) {
+    $('#status').innerHTML = '<span class="spinner"></span> Downloading from the Chrome Web Store…';
+    call('ext.install', { id }).then((r) => { $('#status').innerHTML = `${icon('check', 14)} Added ${esc(r.name)} ${esc(r.version)}.`; $('#url').value = ''; load(); }).catch((e) => { $('#status').textContent = e.message; });
+  }
+  $('#install').onclick = () => install($('#url').value);
+  $('#url').onkeydown = (e) => { if (e.key === 'Enter') install($('#url').value); };
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-add],[data-rm],[data-open],[data-opt]'); if (!t) return;
+    if (t.dataset.add) install(t.dataset.add);
+    if (t.dataset.rm) confirmBox('Remove this extension?', '', 'Remove', true).then((ok) => ok && call('ext.remove', { id: t.dataset.rm }).then(load));
+    if (t.dataset.open) call('ext.openPopup', { id: t.dataset.open });
+    if (t.dataset.opt) call('ext.openOptions', { id: t.dataset.opt });
+  });
+  document.addEventListener('change', (e) => { if (e.target.dataset.en) call('ext.enable', { id: e.target.dataset.en, enabled: e.target.checked }); });
+  solus.on('extensionsChanged', load);
+  load();
+</script>
+</body>
+</html>

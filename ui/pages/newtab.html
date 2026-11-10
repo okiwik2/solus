@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New Tab</title>
+<link rel="icon" href="/img/logo-256.png">
+<link rel="stylesheet" href="/shared/base.css">
+<script src="/shared/bridge.js"></script>
+<script src="/shared/theme.js"></script>
+<script src="/shared/icons.js"></script>
+<style>
+  body { min-height: 100vh; overflow-x: hidden; background: var(--nt-bg, var(--page)); background-size: cover; background-position: center; }
+  body.img-bg { --text: #fff; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.35); }
+  #wrap { max-width: 1040px; margin: 0 auto; padding: 0 24px 60px; display: flex; flex-direction: column; align-items: center; }
+  body.align-top #wrap { padding-top: 40px; }
+  body:not(.align-top) #wrap { padding-top: 12vh; }
+  #top-actions { position: fixed; top: 12px; right: 14px; display: flex; gap: 6px; z-index: 5; }
+  #top-actions button { width: 34px; height: 34px; border-radius: 50%; border: 0; display: grid; place-items: center; background: color-mix(in srgb, var(--card) 70%, transparent); color: var(--text); text-shadow: none; }
+  #top-actions button:hover { background: var(--card); }
+  .section { width: 100%; display: flex; flex-direction: column; align-items: center; margin-bottom: 26px; }
+  [data-sec="clock"] .time { font-size: 64px; font-weight: 300; letter-spacing: -.03em; line-height: 1; }
+  [data-sec="clock"] .greet { font-size: 17px; color: var(--muted); margin-top: 6px; }
+  body.img-bg [data-sec="clock"] .greet { color: rgba(255,255,255,.9); }
+  #brand { display: flex; align-items: center; gap: 12px; font-size: 34px; font-weight: 600; letter-spacing: -.02em; }
+  #brand img { width: 44px; height: 44px; }
+  #search { position: relative; width: min(640px, 100%); }
+  #search .box { display: flex; align-items: center; gap: 10px; height: 48px; padding: 0 18px; border-radius: 24px; background: var(--card); border: 1px solid var(--border); box-shadow: 0 1px 6px rgba(0,0,0,.08); color: var(--text); text-shadow: none; }
+  #search.open .box { border-radius: 24px 24px 0 0; box-shadow: 0 2px 10px rgba(0,0,0,.12); border-bottom-color: transparent; }
+  #search input { flex: 1; border: 0; outline: 0; background: none; font-size: 16px; min-width: 0; }
+  #sugs { position: absolute; left: 0; right: 0; top: 48px; background: var(--card); border: 1px solid var(--border); border-top: 0; border-radius: 0 0 24px 24px; padding: 6px 0 10px; z-index: 10; box-shadow: 0 6px 14px rgba(0,0,0,.12); text-shadow: none; color: var(--text); }
+  .sug { display: flex; gap: 12px; align-items: center; padding: 8px 20px; cursor: default; }
+  .sug.sel, .sug:hover { background: var(--tb-hover); }
+  .sug .u { color: var(--muted); font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #shortcuts { display: grid; grid-template-columns: repeat(auto-fill, 112px); justify-content: center; gap: 8px; width: min(980px, 100%); }
+  .sc { position: relative; height: 112px; border-radius: 12px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-decoration: none; color: inherit; padding: 8px; }
+  .sc:hover { background: color-mix(in srgb, var(--card) 80%, transparent); }
+  .sc .ico { width: 48px; height: 48px; border-radius: 50%; background: var(--card); display: grid; place-items: center; box-shadow: 0 1px 3px rgba(0,0,0,.08); color: var(--muted); font-weight: 600; font-size: 18px; text-shadow: none; }
+  .sc .ico img { width: 24px; height: 24px; }
+  .sc .name { font-size: 12.5px; max-width: 96px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sc .x { position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; border: 0; background: none; display: none; place-items: center; color: inherit; }
+  .sc:hover .x { display: grid; }
+  .sc .x:hover { background: var(--hover); }
+  #widgets { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; width: 100%; text-shadow: none; }
+  .widget { background: color-mix(in srgb, var(--card) 94%, transparent); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; min-height: 120px; color: var(--text); display: flex; flex-direction: column; backdrop-filter: blur(8px); }
+  .widget header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-weight: 600; }
+  .widget header .t { flex: 1; }
+  .widget header button { width: 26px; height: 26px; border-radius: 6px; border: 0; background: none; display: grid; place-items: center; color: var(--muted); }
+  .widget header button:hover { background: var(--tb-hover); }
+  .widget .li { display: flex; align-items: center; gap: 8px; padding: 5px 4px; border-radius: 6px; text-decoration: none; color: inherit; min-width: 0; }
+  .widget .li:hover { background: var(--tb-hover); }
+  .widget .li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .widget .li img { width: 16px; height: 16px; }
+  .widget .wx { display: flex; align-items: center; gap: 14px; }
+  .widget .wx .deg { font-size: 40px; font-weight: 300; }
+  .widget textarea { flex: 1; border: 0; background: none; resize: none; outline: none; min-height: 90px; color: var(--text); }
+  .customize { position: fixed; top: 0; right: 0; bottom: 0; width: 360px; background: var(--card); border-left: 1px solid var(--border); padding: 18px; overflow: auto; z-index: 20; text-shadow: none; color: var(--text); box-shadow: -6px 0 24px rgba(0,0,0,.12); }
+  .customize h3 { margin-top: 18px; }
+  .customize .opt { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; }
+  .customize .wlist .opt { border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; margin-bottom: 6px; }
+  .bgs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+  .bgs button { height: 48px; border-radius: 8px; border: 2px solid transparent; }
+  .bgs button.on { border-color: var(--accent); }
+  [draggable="true"] { cursor: grab; }
+</style>
+</head>
+<body>
+<div id="top-actions">
+  <button id="cust-btn" title="Customise this page"></button>
+</div>
+<div id="wrap"></div>
+<script src="/shared/page.js"></script>
+<script src="/pages/newtab.js"></script>
+</body>
+</html>

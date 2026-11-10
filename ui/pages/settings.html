@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings</title>
+<link rel="icon" href="/img/logo-256.png">
+<link rel="stylesheet" href="/shared/base.css">
+<script src="/shared/bridge.js"></script>
+<script src="/shared/theme.js"></script>
+<script src="/shared/icons.js"></script>
+<style>
+  .sec { scroll-margin-top: 20px; }
+  .sec > h2:first-child { margin-top: 8px; }
+  .kbd-input { width: 170px; text-align: center; font-family: "Cascadia Mono", Consolas, monospace; cursor: default; }
+  .kbd-input.rec { border-color: var(--accent); background: var(--accent-soft); }
+  .perm-grid td select { height: 28px; }
+  .theme-swatches { display: flex; gap: 10px; flex-wrap: wrap; }
+  .theme-swatches button { width: 74px; border-radius: 10px; border: 2px solid var(--border); background: var(--card); padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11.5px; }
+  .theme-swatches button.on { border-color: var(--accent); }
+  .theme-swatches .sw { width: 100%; height: 30px; border-radius: 6px; }
+  .search-hit { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <nav class="nav" id="nav">
+    <div class="brand"><img src="/img/logo-256.png" alt="">Settings</div>
+    <input class="field" id="search" placeholder="Search settings" style="height:32px">
+  </nav>
+  <main id="main"></main>
+</div>
+<script src="/shared/page.js"></script>
+<script src="/pages/settings.js"></script>
+</body>
+</html>

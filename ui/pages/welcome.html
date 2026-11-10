@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Welcome to Solus</title>
+<link rel="icon" href="/img/logo-256.png">
+<link rel="stylesheet" href="/shared/base.css">
+<script src="/shared/bridge.js"></script>
+<script src="/shared/theme.js"></script>
+<script src="/shared/icons.js"></script>
+<style>
+  body { background: var(--page); }
+  .wiz { max-width: 720px; margin: 0 auto; padding: 48px 24px 80px; }
+  .steps { display: flex; gap: 6px; margin-bottom: 28px; }
+  .steps span { flex: 1; height: 4px; border-radius: 2px; background: var(--border); }
+  .steps span.on { background: var(--accent); }
+  .hero { text-align: center; padding: 30px 0 10px; }
+  .hero img { width: 84px; height: 84px; }
+  .hero h1 { font-size: 30px; margin: 14px 0 6px; }
+  .choice { display: grid; gap: 10px; }
+  .choice.c3 { grid-template-columns: repeat(3, 1fr); }
+  .choice.c2 { grid-template-columns: repeat(2, 1fr); }
+  .opt { border: 2px solid var(--border); border-radius: 12px; padding: 14px 16px; background: var(--card); text-align: left; display: flex; flex-direction: column; gap: 4px; }
+  .opt:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
+  .opt.on { border-color: var(--accent); background: var(--accent-soft); }
+  .opt b { font-size: 14px; }
+  .opt span { color: var(--muted); font-size: 12.5px; }
+  .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; }
+  .tick { color: var(--ok); }
+  .card.pad label { display: flex; gap: 8px; align-items: center; padding: 4px 0; }
+</style>
+</head>
+<body>
+<div class="wiz">
+  <div class="steps" id="steps"></div>
+  <div id="step"></div>
+  <div class="foot"><button class="btn" id="back">Back</button><span><button class="btn" id="skip">Skip</button> <button class="btn primary" id="next">Next</button></span></div>
+</div>
+<script src="/shared/page.js"></script>
+<script src="/pages/welcome.js"></script>
+</body>
+</html>
