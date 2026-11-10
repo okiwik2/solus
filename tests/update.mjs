@@ -42,9 +42,10 @@ async function scenario(name, prepare, expect) {
     expect(st, data);
     results.push({ name, ok: true }); console.log(`  PASS  ${name}`);
   } catch (e) { results.push({ name, ok: false, error: e.message }); console.log(`  FAIL  ${name}: ${e.message}`); }
-  try { await c.send({ cmd: 'quit' }, 8000); } catch {}
+  // force-close: a normal quit would install the accepted test update (into the real install folder)
   c.close();
-  await new Promise((r) => { p.on('exit', r); setTimeout(r, 8000); });
+  try { execFileSync('taskkill', ['/F', '/T', '/PID', String(p.pid)], { stdio: 'ignore' }); } catch {}
+  await new Promise((r) => { if (p.exitCode !== null) return r(); p.on('exit', r); setTimeout(r, 8000); });
   const updDir = path.join(data, 'Updates');
   const leftover = fs.existsSync(updDir) ? fs.readdirSync(updDir) : [];
   try { fs.rmSync(data, { recursive: true, force: true }); } catch {}

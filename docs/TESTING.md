@@ -19,6 +19,7 @@ The automation channel used by the tests is compiled into every build but is ine
 
 Notes
 - EasyList turns off generic cosmetic filtering on `localhost`/`127.0.0.1`, so the ad test serves its page as `ads.solus.test` (mapped to the local test server with `--host-resolver-rules`).
+- The installer test installs into a temporary folder, but its uninstall step removes the per-user Start-menu shortcut and browser registration, which a real install on the same account shares. When it finds a real install it re-installs the setup under test there at the end (so that install ends up on the tested version). The update test force-closes Solus after each scenario so the accepted test update is never applied.
 - The AI and update tests use `SOLUS_AI_BASE` / `SOLUS_UPDATE_FEED` to reach local mock servers. Solus ignores both unless the automation token is set and the address is `http://127.0.0.1:…`.
 - When the Windows session is locked, Chromium treats every page as hidden and stops producing frames; the end-to-end tests check DOM state rather than pixels.
 - Lesson from 1.0.0: DOM checks alone missed that the UI layer was never painted. Before a release, run `tests/_tour.mjs` on an unlocked screen and look at the screenshots; `tests/_vis.mjs` and `tools/wintree.ps1` help diagnose visibility and window-layering problems.

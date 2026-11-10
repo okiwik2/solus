@@ -13,12 +13,17 @@ const dir = path.join(work, 'Solus');
 const data = path.join(work, 'data');
 const results = [];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-const reg = (key, value) => { try { return execFileSync('reg', ['query', key, ...(value === undefined ? [] : value === '' ? ['/ve'] : ['/v', value])], { encoding: 'utf8' }); } catch { return null; } };
+const reg = (key, value) => { try { return execFileSync('reg', ['query', key, ...(value === undefined ? [] : value === '' ? ['/ve'] : ['/v', value])], { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }); } catch { return null; } };
 async function test(name, fn) { try { await fn(); results.push({ name, ok: true }); console.log(`  PASS  ${name}`); } catch (e) { results.push({ name, ok: false, error: e.message }); console.log(`  FAIL  ${name}: ${e.message}`); } }
 const ok = (c, m) => { if (!c) throw new Error(m); };
 const run = (exe, args) => execFileSync(exe, args, { stdio: 'ignore', timeout: 300000 });
 
-console.log(`Installer test\n  setup: ${setup}\n  into:  ${dir}\n`);
+// A real per-user install shares the Start-menu shortcut and browser registration with the test
+// install, and the uninstall step removes them. If one exists it is restored at the end by
+// installing the setup under test into the real folder (which upgrades it to that version).
+const realKey = 'HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{6B1F2C1E-5A37-4C2B-9C1D-50D7A5B2E0A1}_is1';
+const realDir = ((reg(realKey, 'InstallLocation') || '').match(/REG_SZ\s+(.+?)\\?\s*$/m) || [])[1] || '';
+console.log(`Installer test\n  setup: ${setup}\n  into:  ${dir}\n${realDir ? `  note:  Solus is installed at ${realDir}; it will be re-installed from this setup at the end\n` : ''}`);
 
 await test('silent-install', async () => {
   run(setup, ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER', `/DIR=${dir}`, `/LOG=${path.join(work, 'install.log')}`]);
@@ -81,6 +86,10 @@ await test('uninstall-cleans-up', async () => {
   ok(fs.existsSync(path.join(data, 'Profiles')), 'silent uninstall must keep user data');
 });
 
+if (realDir) {
+  run(setup, ['/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/CURRENTUSER', `/DIR=${realDir}`]);
+  console.log('  restored the existing install at ' + realDir);
+}
 const passed = results.filter((r) => r.ok).length;
 console.log(`\n${passed}/${results.length} passed`);
 fs.writeFileSync(path.join('tests', 'installer-results.json'), JSON.stringify({ when: new Date().toISOString(), setup, results }, null, 2));
