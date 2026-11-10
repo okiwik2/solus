@@ -8,6 +8,8 @@ import path from 'path';
 const arg = (k, d) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || '').split('=')[1] || d;
 const SOLUS = path.resolve(arg('solus', 'target/release/solus.exe'));
 const RUNS = +arg('runs', 5);
+const PERF = arg('profile', 'balanced');
+const POWER = (() => { try { return execFileSync('powershell', ['-NoProfile', '-Command', "$b = Get-CimInstance Win32_Battery; if (-not $b) { 'mains (no battery)' } elseif ($b.BatteryStatus -eq 1) { 'battery' } else { 'mains' }"], { encoding: 'utf8' }).trim(); } catch { return 'unknown'; } })();
 const CHROME = [process.env.ProgramFiles, process.env['ProgramFiles(x86)'], process.env.LOCALAPPDATA].map((p) => p && path.join(p, 'Google/Chrome/Application/chrome.exe')).find((p) => p && fs.existsSync(p));
 const SITES = ['https://en.wikipedia.org/wiki/New_Zealand', 'https://www.bbc.com/news', 'https://github.com/rust-lang/rust', 'https://www.youtube.com/', 'https://www.reddit.com/r/newzealand/', 'https://stackoverflow.com/questions', 'https://www.theguardian.com/international', 'https://www.nytimes.com/', 'https://www.amazon.com/', 'https://www.stuff.co.nz/'];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -17,7 +19,7 @@ const median = (a) => { const s = [...a].sort((x, y) => x - y); return s[Math.fl
 
 function freshDir(kind) {
   const d = fs.mkdtempSync(path.join(os.tmpdir(), `bench-${kind}-`));
-  if (kind === 'solus') fs.writeFileSync(path.join(d, 'Local State.json'), JSON.stringify({ onboarding_done: true }));
+  if (kind === 'solus') fs.writeFileSync(path.join(d, 'Local State.json'), JSON.stringify({ onboarding_done: true, perf_profile: PERF, auto_battery: false }));
   return d;
 }
 function argLine(kind, dir, urls) {
@@ -63,7 +65,7 @@ r.solusStartup = await startup('solus'); console.log('  Solus ', r.solusStartup.
 console.log('Background CPU with 10 sites open (3 minutes, no input)');
 r.chromeCpu = await idleCpu('chrome'); console.log('  Chrome', JSON.stringify(r.chromeCpu));
 r.solusCpu = await idleCpu('solus'); console.log('  Solus ', JSON.stringify(r.solusCpu));
-const md = `# Startup & CPU benchmark — ${r.when.slice(0, 10)}\n\n${r.machine}. Fresh profiles, default settings.\n\n| Measure | Chrome | Solus |\n|---|---|---|\n` +
+const md = `# Startup & CPU benchmark — ${r.when.slice(0, 10)}\n\n${r.machine}. Fresh profiles, default settings; Solus ${PERF} profile pinned. Power: ${POWER}.\n\n| Measure | Chrome | Solus |\n|---|---|---|\n` +
   `| Startup to visible window, median of ${RUNS} (ms) | ${median(r.chromeStartup)} | ${median(r.solusStartup)} |\n` +
   `| Background CPU, 10 sites idle for 3 min (CPU-seconds) | ${(r.chromeCpu.cpuMs / 1000).toFixed(1)} | ${(r.solusCpu.cpuMs / 1000).toFixed(1)} |\n` +
   `| Same, as average % of the whole CPU | ${r.chromeCpu.avgPercentOfMachine}% | ${r.solusCpu.avgPercentOfMachine}% |\n`;

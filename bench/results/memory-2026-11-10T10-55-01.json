@@ -1,0 +1,123 @@
+{
+  "when": "2026-11-10T10:55:01.051Z",
+  "chrome": "157.0.8103.39",
+  "solusProfile": "efficiency",
+  "machine": "Intel(R) Core(TM) Ultra 5 338H, 16 GB RAM",
+  "scenarios": [
+    {
+      "name": "1 tab (new tab page)",
+      "chrome": [
+        {
+          "at": 20,
+          "mb": 348,
+          "processes": 17,
+          "byType": {
+            "crashpad-handler": 2,
+            "gpu-process": 136,
+            "updater.exe": 8,
+            "chrome.exe": 49,
+            "utility": 10,
+            "renderer": 143
+          }
+        }
+      ],
+      "solus": [
+        {
+          "at": 20,
+          "mb": 166,
+          "processes": 8,
+          "byType": {
+            "solus.exe": 9,
+            "gpu-process": 64,
+            "renderer": 43,
+            "utility": 10,
+            "msedgewebview2.exe": 38,
+            "crashpad-handler": 2
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 popular sites",
+      "chrome": [
+        {
+          "at": 45,
+          "mb": 1400,
+          "processes": 26,
+          "byType": {
+            "crashpad-handler": 2,
+            "gpu-process": 199,
+            "chrome.exe": 143,
+            "utility": 75,
+            "renderer": 982
+          }
+        },
+        {
+          "at": 180,
+          "mb": 1346,
+          "processes": 26,
+          "byType": {
+            "crashpad-handler": 2,
+            "gpu-process": 198,
+            "chrome.exe": 162,
+            "utility": 71,
+            "renderer": 914
+          }
+        },
+        {
+          "at": 360,
+          "mb": 1321,
+          "processes": 26,
+          "byType": {
+            "crashpad-handler": 2,
+            "gpu-process": 198,
+            "chrome.exe": 163,
+            "utility": 71,
+            "renderer": 888
+          }
+        }
+      ],
+      "solus": [
+        {
+          "at": 45,
+          "mb": 835,
+          "processes": 21,
+          "byType": {
+            "solus.exe": 15,
+            "gpu-process": 173,
+            "renderer": 521,
+            "utility": 26,
+            "msedgewebview2.exe": 98,
+            "crashpad-handler": 2
+          }
+        },
+        {
+          "at": 180,
+          "mb": 430,
+          "processes": 11,
+          "byType": {
+            "solus.exe": 15,
+            "gpu-process": 157,
+            "renderer": 160,
+            "utility": 23,
+            "msedgewebview2.exe": 74,
+            "crashpad-handler": 2
+          }
+        },
+        {
+          "at": 360,
+          "mb": 311,
+          "processes": 11,
+          "byType": {
+            "solus.exe": 12,
+            "gpu-process": 61,
+            "renderer": 146,
+            "utility": 21,
+            "msedgewebview2.exe": 68,
+            "crashpad-handler": 1
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -60,6 +60,22 @@ async function test(name, seed, fn) {
 console.log(`Solus integration tests (part 2)\n  exe: ${exe}\n`);
 
 async function poll(s, script, okFn, ms = 8000) { let v; const end = Date.now() + ms; while (Date.now() < end) { v = await s.eval(script); if (okFn(v)) return v; await sleep(300); } return v; }
+// regression: 1.0.0 shipped with the UI webview never made visible (nothing painted) and the page
+// area collapsed to 0x0 because hidden grid children shifted rows/columns
+await test('ui-is-painted-and-page-area-has-size', null, async (s) => {
+  await s.go('https://example.com/');
+  let v;
+  for (let i = 0; i < 20; i++) {
+    v = JSON.parse(await s.eval('JSON.stringify({vis: document.visibilityState, host: document.querySelector("#page-host").getBoundingClientRect(), w: innerWidth, h: innerHeight})', 'ui'));
+    if (v.vis === 'visible' && v.host.width > 0 && v.host.height > 0) break;
+    await sleep(300);
+  }
+  ok(v.vis === 'visible', 'browser UI is not visible: ' + v.vis);
+  ok(Math.abs(v.host.width - v.w) < 2 && v.host.height > v.h * 0.5, 'page area has the wrong size: ' + JSON.stringify(v.host));
+  ok((await s.eval('document.visibilityState')) === 'visible', 'active page is not visible');
+  ok(Math.abs((await s.eval('innerHeight')) - v.host.height) < 3, 'page viewport does not match the page area');
+});
+
 await test('third-party-cookies-allowed-control', { block_third_party_cookies: false }, async (s) => {
   await s.go(SITE + "/3pc");
   const v = await poll(s, 'String(window.__tp)', (x) => typeof x === 'string' && x.startsWith('cookie:'));

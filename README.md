@@ -35,25 +35,23 @@ node bench\memory.mjs                       # Solus vs Chrome memory benchmark
 node bench\cpu-startup.mjs                  # startup time and background CPU vs Chrome
 ```
 
-## Measured memory (bench/results)
-Intel Core Ultra 5 338H, 16 GB, Chrome 157 (fresh profile, defaults) vs Solus 1.0 (Balanced). Private working set of each browser's whole process tree, same 10 sites (Wikipedia, BBC, GitHub, YouTube, Reddit, Stack Overflow, Guardian, NYT, Amazon, Stuff).
+## Measured memory and CPU (bench/results)
+Intel Core Ultra 5 338H, 16 GB, on mains power. Chrome 157 (fresh profile, default settings) vs Solus 1.0.1 (fresh profile) with each performance profile pinned. Memory is the private working set of each browser's whole process tree; the same 10 sites (Wikipedia, BBC, GitHub, YouTube, Reddit, Stack Overflow, Guardian, NYT, Amazon, Stuff) are opened in each.
 
-| | Chrome | Solus |
-|---|---|---|
-| 1 tab | 309 MB | 152 MB (−51%) |
-| 10 sites after 45 s | 1,424 MB | 1,013 MB (−29%) |
-| 10 sites after 3 min | 1,406 MB | 298 MB (−79%) |
-| 10 sites after 6 min | 1,370 MB | 342 MB (−75%) |
+| | Chrome | Solus — Balanced (default on mains) | Solus — Efficiency (default on battery) |
+|---|---|---|---|
+| 1 tab | 305–348 MB | 167 MB | 166 MB |
+| 10 sites after 45 s | 1,400 MB | 436 MB | 835 MB |
+| 10 sites after 3 min | 1,346 MB | 710 MB | 430 MB |
+| 10 sites after 6 min | 1,151–1,321 MB | 391 MB | 311 MB |
+| Background CPU, 10 sites idle for 3 min | 34.5–34.8 CPU-s (1.6% of the machine) | 21.1 CPU-s (0.98%) | 11.9 CPU-s (0.55%) |
+| Startup to visible window (median of 5) | 250–259 ms | 89 ms | 93 ms |
 
-### Startup and background CPU (`bench/cpu-startup.mjs`)
-| | Chrome | Solus |
-|---|---|---|
-| Startup to visible main window, median of 5 | 269 ms | 89 ms |
-| Background CPU, 10 sites idle for 3 min | 31.8 CPU-s (1.47% of the machine) | 4.3 CPU-s (0.2%) |
+Chrome was measured alongside each Solus run, hence the ranges. Single runs on live websites are noisy (ads and video differ from minute to minute; the Balanced 45 s reading caught pages mid-load), so treat the differences as indicative rather than exact. Run `node bench/memory.mjs --profile=balanced|efficiency` and `node bench/cpu-startup.mjs --profile=...` to reproduce.
 
-"Visible window" is when the top-level window appears; Solus shows its window frame immediately and the toolbar/page fill in a moment later, so this measures perceived launch, not page load. Background CPU is lower mainly because idle background tabs are paused.
+Where the saving comes from: Solus asks the engine to shrink background tabs after 30 s (Balanced) and pauses them after 5 min; Efficiency pauses after 1 min and unloads tabs when memory use passes 75%. Chrome's Memory Saver only discards tabs much later. "Visible window" is when the top-level window appears; the toolbar and page fill in a moment later, so it measures perceived launch, not page load.
 
-Most of the saving comes from Solus asking the engine to shrink background tabs and pausing them; Chrome's own Memory Saver only discards tabs after much longer. Numbers vary with sites and ads; run `node bench/memory.mjs` to reproduce.
+> Correction: the figures published with 1.0.0 (e.g. "298 MB after 3 min") were labelled Balanced but were taken on battery, where Solus switches to Efficiency automatically. The benchmarks now pin the profile and record the power source.
 
 ## Known limitations (and what Solus does instead)
 - **Engine is WebView2, not a Chromium fork.** Chromium security updates arrive automatically through Windows. Malicious-site protection is **Microsoft Defender SmartScreen**; Google Safe Browsing isn't available to Chromium-based apps outside Google's own browser.

@@ -1,6 +1,6 @@
 [package]
 name = "solus"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 description = "Solus - a low-memory Chromium (WebView2) browser for Windows 11"
 build = "build.rs"

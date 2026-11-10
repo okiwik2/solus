@@ -12,6 +12,7 @@ const arg = (k, d) => (process.argv.find((a) => a.startsWith(`--${k}=`)) || '').
 const MINUTES = +arg('minutes', 6);
 const SOLUS = path.resolve(arg('solus', 'target/release/solus.exe'));
 const PERF = arg('profile', 'balanced');
+const POWER = (() => { try { return execFileSync('powershell', ['-NoProfile', '-Command', "$b = Get-CimInstance Win32_Battery; if (-not $b) { 'mains (no battery)' } elseif ($b.BatteryStatus -eq 1) { 'battery' } else { 'mains' }"], { encoding: 'utf8' }).trim(); } catch { return 'unknown'; } })();
 const CHROME = [process.env.ProgramFiles, process.env['ProgramFiles(x86)'], process.env.LOCALAPPDATA].map((p) => p && path.join(p, 'Google/Chrome/Application/chrome.exe')).find((p) => p && fs.existsSync(p));
 const SITES = [
   'https://en.wikipedia.org/wiki/New_Zealand', 'https://www.bbc.com/news', 'https://github.com/rust-lang/rust',
@@ -40,7 +41,7 @@ async function runChrome(urls, checkpoints) {
 async function runSolus(urls, checkpoints) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'bench-solus-'));
   // fresh profile, onboarding already done, chosen performance profile
-  fs.writeFileSync(path.join(dir, 'Local State.json'), JSON.stringify({ onboarding_done: true, perf_profile: PERF, clean_exit: true }));
+  fs.writeFileSync(path.join(dir, 'Local State.json'), JSON.stringify({ onboarding_done: true, perf_profile: PERF, auto_battery: false, clean_exit: true }));
   const token = 'bench-' + Math.random().toString(36).slice(2) + 'xxxxxxxxxxxx';
   const port = 47800 + Math.floor(Math.random() * 100);
   const p = spawn(SOLUS, [`--user-data-dir=${dir}`, `--automation-port=${port}`, ...urls], { stdio: 'ignore', env: { ...process.env, SOLUS_AUTOMATION_TOKEN: token } });
@@ -67,7 +68,7 @@ async function sample(pid, checkpoints) {
 
 if (!CHROME) { console.error('Google Chrome not found'); process.exit(1); }
 const chromeVer = (() => { try { return execFileSync('powershell', ['-NoProfile', '-Command', `(Get-Item '${CHROME}').VersionInfo.ProductVersion`], { encoding: 'utf8' }).trim(); } catch { return '?'; } })();
-console.log(`Chrome ${chromeVer}\nSolus  ${SOLUS} (${PERF} profile)\n`);
+console.log(`Chrome ${chromeVer}\nSolus  ${SOLUS} (${PERF} profile)\nPower  ${POWER}\n`);
 const report = { when: new Date().toISOString(), chrome: chromeVer, solusProfile: PERF, machine: `${os.cpus()[0].model}, ${Math.round(os.totalmem() / 2 ** 30)} GB RAM`, scenarios: [] };
 
 const idle = [20];
@@ -81,7 +82,7 @@ for (const [name, urls, cps] of [['1 tab (new tab page)', [], idle], [`${SITES.l
   report.scenarios.push({ name, chrome: c, solus: s });
 }
 
-let md = `# Memory benchmark — ${report.when.slice(0, 10)}\n\n${report.machine}. Chrome ${report.chrome} (fresh profile, default settings) vs Solus (${PERF} profile, fresh profile).\n` +
+let md = `# Memory benchmark — ${report.when.slice(0, 10)}\n\n${report.machine}. Chrome ${report.chrome} (fresh profile, default settings) vs Solus (${PERF} profile pinned, fresh profile). Power: ${POWER}.\n` +
   `Memory = private working set summed over each browser's whole process tree. Sites: ${SITES.map((u) => new URL(u).hostname).join(', ')}.\n\n` +
   '| Scenario | Time | Chrome | Solus | Difference |\n|---|---|---|---|---|\n';
 for (const sc of report.scenarios) {

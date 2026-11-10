@@ -496,10 +496,13 @@ impl App {
                     crate::scheme::install(&wv);
                     crate::bridge::install_ui(&wv, wid);
                     crate::tab::install_accelerators(&ctl, wid, 0);
-                    w.ui = Some(View { container, ctl, wv: wv.clone() });
                     unsafe {
                         let _ = ShowWindow(container, SW_SHOW);
+                        // the controller was created inside a not-yet-shown container, so WebView2
+                        // starts it hidden (document.visibilityState "hidden", nothing painted)
+                        let _ = ctl.SetIsVisible(true);
                     }
+                    w.ui = Some(View { container, ctl, wv: wv.clone() });
                     w.layout();
                     crate::webview::navigate(&wv, "solus://chrome/");
                 }
